@@ -1,4 +1,4 @@
-# mock_data.py (Save this data generation logic if you want, or include it directly in the main app script)
+# This module will contain the mock data generation functions.
 import pandas as pd
 import random
 from datetime import datetime, timedelta
