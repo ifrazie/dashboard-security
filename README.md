@@ -45,6 +45,14 @@ This project is a prototype for an interactive security dashboard built using St
 
 2. Open the provided URL in your browser to view the dashboard.
 
+## Running Tests
+
+To run the tests and check coverage, use the following command:
+
+```bash
+pytest
+```
+
 ## Project Structure
 
 ```bash
@@ -65,6 +73,7 @@ project-root/
 - Streamlit
 - Pandas
 - Plotly
+- Pytest
 
 ## License
 
