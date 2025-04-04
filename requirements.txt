@@ -1,7 +1,7 @@
-streamlit 
-pandas 
-plotly 
-python-dateutil
-pytest
-pytest-cov
-openai
+streamlit>=1.20.0
+pandas>=1.5.3
+plotly>=5.13.1 
+python-dateutil>=2.8.2
+pytest>=7.2.2
+pytest-cov>=4.0.0
+openai>=0.27.8

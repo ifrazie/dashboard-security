@@ -67,4 +67,4 @@ venv.bak/
 *.local
 
 # Snyk Cache
-.dcache
+.dccache
