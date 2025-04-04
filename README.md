@@ -11,34 +11,43 @@ This project is a prototype for an interactive security dashboard built using St
 ## Installation
 
 1. Clone the repository:
+
    ```bash
    git clone <repository-url>
-   ```
+   ```plaintext
+
 2. Navigate to the project directory:
+
    ```bash
    cd dashboard-security
-   ```
+   ```plaintext
+
 3. Create a virtual environment (optional but recommended):
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+   ```plaintext
+
 4. Install the required dependencies:
+
    ```bash
    pip install -r requirements.txt
-   ```
+   ```plaintext
 
 ## Usage
 
 1. Run the Streamlit app:
+
    ```bash
    streamlit run src/security_dashboard.py
    ```
+
 2. Open the provided URL in your browser to view the dashboard.
 
 ## Project Structure
 
-```
+```bash
 project-root/
 │
 ├── src/
