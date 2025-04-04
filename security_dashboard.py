@@ -157,8 +157,8 @@ def correlate_findings(threat_intel_df, anomalies_df):
 anomalies_df = correlate_findings(threat_intel_df, anomalies_df)
 
 # --- Streamlit App Layout ---
-st.title("🛡️ Interactive Security Dashboard")
-st.markdown("Visualize threat intelligence and system anomalies.")
+st.title("🛡️ AI-Assisted Security Dashboard")
+st.markdown("Interact with the AI assistant below to query data, identify insights, and get guidance.")
 
 # --- Key Metrics Section ---
 st.header("📊 Key Metrics Overview")
@@ -340,9 +340,6 @@ available_tools = {
 }
 
 # --- AI Assistant Integration ---
-# Replace OpenAI with Ollama model
-st.title("🛡️ AI-Assisted Security Dashboard")
-st.markdown("Interact with the AI assistant below to query data, identify insights, and get guidance.")
 
 # --- Initialize Session State ---
 if "messages" not in st.session_state:
