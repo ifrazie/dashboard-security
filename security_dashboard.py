@@ -175,6 +175,29 @@ st.caption(f"Displaying {filtered_threat_df.shape[0]} out of {total_threats} thr
 
 st.divider()
 
+# Add a heatmap visualization for threat intelligence data
+st.header("🔍 Threat Intelligence Heatmap")
+
+# Create a pivot table for heatmap visualization
+heatmap_data = threat_intel_df.pivot_table(
+    index=threat_intel_df['timestamp'].dt.date,  # Group by date
+    columns='severity',
+    values='value',
+    aggfunc='count',  # Count the number of records per severity level
+    fill_value=0
+)
+
+# Create the heatmap using Plotly Express
+heatmap_fig = px.imshow(
+    heatmap_data,
+    labels=dict(x="Severity", y="Date", color="Count"),
+    title="Threat Intelligence Heatmap",
+    color_continuous_scale="Viridis"
+)
+
+# Display the heatmap
+st.plotly_chart(heatmap_fig, use_container_width=True)
+
 # --- Anomaly Detection Section ---
 st.header("📈 System Anomaly Monitoring")
 
