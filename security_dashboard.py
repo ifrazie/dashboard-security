@@ -117,6 +117,36 @@ def load_data():
 
 threat_intel_df, anomalies_df = load_data()
 
+# --- Correlation Logic ---
+def correlate_findings(threat_intel_df, anomalies_df):
+    """
+    Correlates anomalies with recent critical IOCs.
+
+    Args:
+        threat_intel_df (pd.DataFrame): Threat intelligence data.
+        anomalies_df (pd.DataFrame): Anomaly data.
+
+    Returns:
+        pd.DataFrame: Anomalies with an additional column indicating correlation with critical IOCs.
+    """
+    # Filter for recent critical IOCs (last 7 days)
+    recent_critical_iocs = threat_intel_df[
+        (threat_intel_df['severity'] == 'Critical') &
+        (threat_intel_df['timestamp'] >= datetime.now() - timedelta(days=7))
+    ]
+
+    # Extract unique IOC values (e.g., IPs, domains) from recent critical IOCs
+    ioc_values = set(recent_critical_iocs['value'])
+
+    # Add a correlation column to anomalies_df
+    anomalies_df['correlated_with_ioc'] = anomalies_df['metric'].apply(
+        lambda metric: any(ioc in metric for ioc in ioc_values)
+    )
+
+    return anomalies_df
+
+# Apply correlation logic
+anomalies_df = correlate_findings(threat_intel_df, anomalies_df)
 
 # --- Streamlit App Layout ---
 st.title("🛡️ Interactive Security Dashboard")
@@ -199,7 +229,7 @@ heatmap_fig = px.imshow(
 st.plotly_chart(heatmap_fig, use_container_width=True)
 
 # --- Anomaly Detection Section ---
-st.header("📈 System Anomaly Monitoring")
+st.header("📈 System Anomaly Monitoring (Correlated)")
 
 # Select metric to visualize
 metric_to_plot = st.selectbox(
@@ -208,10 +238,10 @@ metric_to_plot = st.selectbox(
 )
 
 # Filter data for the selected metric
-metric_df = anomalies_df[anomalies_df['metric'] == metric_to_plot].copy() # Use .copy() to avoid SettingWithCopyWarning
+metric_df = anomalies_df[anomalies_df['metric'] == metric_to_plot].copy()
 
 # Create the plot using Plotly Express
-fig = px.line(metric_df, x='timestamp', y='value', title=f'Time Series for {metric_to_plot}', markers=False) # Start without markers
+fig = px.line(metric_df, x='timestamp', y='value', title=f'Time Series for {metric_to_plot}', markers=False)
 
 # Add markers for anomalies
 anomalies_points = metric_df[metric_df['is_anomaly']]
@@ -220,8 +250,19 @@ if not anomalies_points.empty:
         x=anomalies_points['timestamp'],
         y=anomalies_points['value'],
         mode='markers',
-        marker=dict(color='red', size=10, symbol='x'), # Use 'x' marker
+        marker=dict(color='red', size=10, symbol='x'),
         name='Anomaly Detected'
+    )
+
+# Highlight correlated anomalies
+correlated_points = metric_df[metric_df['correlated_with_ioc']]
+if not correlated_points.empty:
+    fig.add_scatter(
+        x=correlated_points['timestamp'],
+        y=correlated_points['value'],
+        mode='markers',
+        marker=dict(color='blue', size=12, symbol='circle'),
+        name='Correlated with IOC'
     )
 
 # Improve layout and axes
@@ -230,14 +271,14 @@ fig.update_layout(
     yaxis_title="Value",
     legend_title="Legend"
 )
-fig.update_traces(hovertemplate='<b>Time</b>: %{x}<br><b>Value</b>: %{y}<extra></extra>') # Clean hover info
+fig.update_traces(hovertemplate='<b>Time</b>: %{x}<br><b>Value</b>: %{y}<extra></extra>')
 
 st.plotly_chart(fig, use_container_width=True)
 
 # Optionally display anomaly details in a table
 show_anomaly_table = st.checkbox("Show Anomaly Details Table for Selected Metric")
 if show_anomaly_table:
-    st.dataframe(anomalies_points[['timestamp', 'metric', 'value']], use_container_width=True)
+    st.dataframe(anomalies_points[['timestamp', 'metric', 'value', 'correlated_with_ioc']], use_container_width=True)
 
 st.divider()
 st.caption("Dashboard MVP - Data is randomly generated.")
