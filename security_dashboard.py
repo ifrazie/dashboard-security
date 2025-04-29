@@ -147,7 +147,7 @@ if prompt := st.sidebar.text_input("Ask about the data..."):
 
     try:
         # Call the Ollama API
-        response_message = asyncio.run(stream_chat_with_tools("granite3.1-dense:8b", conversation_history))
+        response_message = asyncio.run(stream_chat_with_tools("granite3.2:8b", conversation_history))
 
         # Add assistant response to state and display
         st.session_state.messages.append({"role": "assistant", "content": response_message})
