@@ -5,7 +5,7 @@ import logging
 import inspect
 
 # Import the functions and dictionary from tool_functions.py
-from documentation.tool_functions import available_functions
+from tools.tool_functions import available_functions
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -87,19 +87,19 @@ async def process_tool_calls(client, model: str, messages: List[Dict[str, Any]],
                     
                     # Use late binding for importing dashboard data if needed
                     # Only import if we need it and we don't have these parameters
-                    if ('df_threat' in func_params and 'df_threat' not in kwargs) or \
-                       ('df_anomaly' in func_params and 'df_anomaly' not in kwargs):
+                    if ('threat_intel_df' in func_params and 'threat_intel_df' not in kwargs) or \
+                       ('anomalies_df' in func_params and 'anomalies_df' not in kwargs):
                         try:
                             # Late import to avoid circular dependency
                             import security_dashboard
                             
-                            if 'df_threat' in func_params and 'df_threat' not in kwargs:
-                                kwargs['df_threat'] = security_dashboard.threat_intel_df
-                                logging.info("Added df_threat from security_dashboard")
+                            if 'threat_intel_df' in func_params and 'threat_intel_df' not in kwargs:
+                                kwargs['threat_intel_df'] = security_dashboard.threat_intel_df
+                                logging.info("Added threat_intel_df from security_dashboard")
                                 
-                            if 'df_anomaly' in func_params and 'df_anomaly' not in kwargs:
-                                kwargs['df_anomaly'] = security_dashboard.anomalies_df
-                                logging.info("Added df_anomaly from security_dashboard")
+                            if 'anomalies_df' in func_params and 'anomalies_df' not in kwargs:
+                                kwargs['anomalies_df'] = security_dashboard.anomalies_df
+                                logging.info("Added anomalies_df from security_dashboard")
                                 
                         except Exception as e:
                             logging.error(f"Error importing dashboard data: {str(e)}")
