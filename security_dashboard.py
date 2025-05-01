@@ -1,10 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import random
 from datetime import datetime, timedelta
 import json
-import requests
 import asyncio
 import logging
 import ollama
@@ -12,6 +10,11 @@ from ollama import ChatResponse
 from data.mock_data import create_mock_threat_intel, create_mock_anomalies
 from utils.correlation import correlate_findings
 from app.dashboard_layout import render_dashboard
+
+# Import tools and async processing functions
+from tools.tool_functions import available_functions
+from tools.async_tools import process_tool_calls
+import yaml
 
 logging.basicConfig(level=logging.INFO)
 
@@ -42,10 +45,11 @@ render_dashboard(threat_intel_df, anomalies_df)
 
 # --- Tool/Function Definitions ---
 # These are the Python functions the LLM can call.
-# They need access to the data currently in the dashboard.
+# Updated to access data directly rather than requiring it as parameters
 
-def get_threat_summary(df_threat):
+def get_threat_summary():
     """Calculates and returns a summary of threat intelligence data."""
+    df_threat = threat_intel_df
     if df_threat is None or df_threat.empty:
         return "No threat intelligence data available to summarize."
     summary = {
@@ -56,8 +60,9 @@ def get_threat_summary(df_threat):
     }
     return json.dumps(summary)  # Return results as JSON string for the LLM
 
-def get_anomaly_summary(df_anomaly):
+def get_anomaly_summary():
     """Calculates and returns a summary of anomaly data."""
+    df_anomaly = anomalies_df
     if df_anomaly is None or df_anomaly.empty:
         return "No anomaly data available to summarize."
     anomalies_detected = df_anomaly[df_anomaly['is_anomaly']]
@@ -67,8 +72,9 @@ def get_anomaly_summary(df_anomaly):
     }
     return json.dumps(summary)
 
-def get_anomalies_for_metric(df_anomaly, metric_name):
+def get_anomalies_for_metric(metric_name):
     """Retrieves specific anomaly details for a given metric."""
+    df_anomaly = anomalies_df
     if df_anomaly is None or df_anomaly.empty:
         return f"No anomaly data available for metric: {metric_name}."
     if metric_name not in df_anomaly['metric'].unique():
@@ -81,27 +87,68 @@ def get_anomalies_for_metric(df_anomaly, metric_name):
     # Return limited, relevant info as JSON
     return anomalies[['timestamp', 'value']].to_json(orient='records', date_format='iso')
 
+def get_data_overview():
+    """Provides a general overview of all available data in the dashboard."""
+    threat_summary = json.loads(get_threat_summary())
+    anomaly_summary = json.loads(get_anomaly_summary())
+    
+    # Extract unique metrics
+    metrics = anomalies_df['metric'].unique().tolist() if not anomalies_df.empty else []
+    
+    # Create a comprehensive overview
+    overview = {
+        "threat_intel": threat_summary,
+        "anomalies": anomaly_summary,
+        "available_metrics": metrics,
+        "data_timespan": {
+            "start": str(anomalies_df['timestamp'].min()) if not anomalies_df.empty else "N/A",
+            "end": str(anomalies_df['timestamp'].max()) if not anomalies_df.empty else "N/A"
+        }
+    }
+    
+    return json.dumps(overview)
+
 # Map tool names the LLM can use to the actual Python functions
-available_tools = {
+dashboard_tools = {
     "get_threat_summary": get_threat_summary,
     "get_anomaly_summary": get_anomaly_summary,
     "get_anomalies_for_metric": get_anomalies_for_metric,
+    "get_data_overview": get_data_overview
 }
+
+# Load tool configuration from YAML file
+def load_tool_config():
+    try:
+        with open('tools/tool_config.yaml', 'r') as file:
+            return yaml.safe_load(file)
+    except Exception as e:
+        logging.error(f"Error loading tool config: {str(e)}")
+        return {"tools": []}
+
+# Combine all tools from documentation and dashboard
+all_tools = {**available_functions, **dashboard_tools}
+tool_config = load_tool_config()
 
 # --- AI Assistant Integration ---
 
 # --- Initialize Session State ---
 if "messages" not in st.session_state:
+    # Start with an empty list or initialize with a welcome message
     st.session_state.messages = [{"role": "assistant", "content": "How can I help you analyze the security data?"}]
 
 # --- Chatbot Integration ---
 async def stream_chat_with_tools(model, messages):
     try:
         client = ollama.AsyncClient()
-        response: ChatResponse = await client.chat(
+        response = await client.chat(
             model,
             messages=[{"role": m["role"], "content": m["content"]} for m in messages]
         )
+        
+        # Check if the response contains tool calls and process them
+        if hasattr(response.message, 'tool_calls') and response.message.tool_calls:
+            return await process_tool_calls(client, model, messages, response, external_tools=dashboard_tools)
+        
         return response.message.content
     except Exception as e:
         logging.error(f"Error during streaming: {str(e)}")
@@ -119,13 +166,36 @@ def export_chat_history(model, messages):
 
     return json.dumps(chat_data, indent=2)
 
+def get_data_context():
+    """Generate a concise data context message for the LLM"""
+    # Get basics about the data
+    metrics = anomalies_df['metric'].unique().tolist() if not anomalies_df.empty else []
+    threat_types = threat_intel_df['ioc_type'].unique().tolist() if not threat_intel_df.empty else []
+    
+    context = {
+        "dashboard_data": {
+            "threat_intel_count": len(threat_intel_df) if not threat_intel_df.empty else 0,
+            "anomaly_count": len(anomalies_df) if not anomalies_df.empty else 0,
+            "available_metrics": metrics,
+            "threat_types": threat_types,
+            "time_range": {
+                "start": str(anomalies_df['timestamp'].min()) if not anomalies_df.empty else "N/A",
+                "end": str(anomalies_df['timestamp'].max()) if not anomalies_df.empty else "N/A"
+            }
+        },
+        "available_tools": [tool["name"] for tool in tool_config.get("tools", [])],
+    }
+    
+    return json.dumps(context, indent=2)
+
 # --- Sidebar for Chatbot ---
 st.sidebar.title("🤖 AI Assistant")
 st.sidebar.markdown("Interact with the AI assistant to query data and gain insights.")
 
-# Initialize session state for chatbot
-if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "How can I help you analyze the security data?"}]
+# Display available tools in the sidebar for reference
+with st.sidebar.expander("Available Security Tools"):
+    for tool in tool_config.get("tools", []):
+        st.markdown(f"**{tool['name']}**: {tool['description']}")
 
 # Display chat messages in the sidebar
 for message in st.session_state.messages:
@@ -144,9 +214,18 @@ if prompt := st.sidebar.text_input("Ask about the data..."):
         {"role": message["role"], "content": message["content"]}
         for message in st.session_state.messages
     ]
+    
+    # Add data context to the conversation for the LLM
+    # Insert context right before the user's latest message
+    if len(conversation_history) > 1:
+        # Create a system message with current data context
+        data_context = {"role": "system", "content": f"Current data context:\n{get_data_context()}"}
+        
+        # Insert before the last user message
+        conversation_history.insert(-1, data_context)
 
     try:
-        # Call the Ollama API
+        # Call the Ollama API with tool support
         response_message = asyncio.run(stream_chat_with_tools("granite3.2:8b", conversation_history))
 
         # Add assistant response to state and display

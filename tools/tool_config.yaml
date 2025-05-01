@@ -1,0 +1,69 @@
+tools:
+  - name : get_info
+    description: Get the IP address of a given domain
+    parameters:
+      type: object
+      required: [ domain ]
+      properties:
+        domain:
+          type: string
+          description: The target domain name
+  
+  - name: scan_network
+    description: Scan a network for open ports
+    parameters:
+      type: object
+      required: [ ip_address ]
+      properties:
+        ip_address:
+          type: string
+          description: The IP address to scan for open ports
+
+  - name: check_vulnerability
+    description: Check for vulnerabilities in a given domain
+    parameters:
+      type: object
+      required: [ domain ]
+      properties:
+        domain:
+          type: string
+          description: The domain to check for vulnerabilities
+  
+  - name: sql_injection
+    description: Check for SQL injection vulnerabilities in a given URL
+    parameters:
+      type: object
+      required: [ url ]
+      properties:
+        url:
+          type: string
+          description: The URL to check for SQL injection vulnerabilities
+
+  # Dashboard-specific tools
+  - name: get_threat_summary
+    description: Get a summary of all threat intelligence data in the dashboard
+    parameters:
+      type: object
+      properties: {}
+  
+  - name: get_anomaly_summary
+    description: Get a summary of all anomaly data in the dashboard
+    parameters:
+      type: object
+      properties: {}
+  
+  - name: get_anomalies_for_metric
+    description: Get details about anomalies for a specific metric
+    parameters:
+      type: object
+      required: [ metric_name ]
+      properties:
+        metric_name:
+          type: string
+          description: The name of the metric to get anomalies for (e.g., login_failures, egress_traffic_mb, cpu_utilization_percent)
+  
+  - name: get_data_overview
+    description: Get a comprehensive overview of all data in the dashboard
+    parameters:
+      type: object
+      properties: {}
