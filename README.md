@@ -16,13 +16,13 @@ This project is a prototype for an interactive security dashboard built using St
 
    ```bash
    git clone <repository-url>
-   ```
+   ```plaintext
 
 2. Navigate to the project directory:
 
    ```bash
    cd dashboard-security
-   ```
+   ```plaintext
 
 3. Create a virtual environment (optional but recommended):
 
@@ -37,7 +37,7 @@ This project is a prototype for an interactive security dashboard built using St
    pip install -r requirements.txt
    ```
 
-5. Install Ollama for the AI integration (follow instructions at https://ollama.com/):
+5. Install Ollama for the AI integration (follow instructions at [Ollama's website](https://ollama.com/)):
    - Download and install Ollama
    - Pull the required model: `ollama pull granite3.2:8b`
 
@@ -75,7 +75,7 @@ pytest
 
 ## Project Structure
 
-```
+```bash
 project-root/
 │
 ├── security_dashboard.py  # Main Streamlit app
